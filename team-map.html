@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>전략기획팀 업무 관계도 · 페어링 맵</title>
+<style>
+  :root{
+    --ink:#121820; --ink2:#48535f; --ink3:#8b96a2;
+    --line:#e2e6eb; --bg:#f6f7f9; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",-apple-system,system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+  }
+  header{padding:24px 32px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+  h1{font-size:19px;letter-spacing:-.4px;font-weight:700}
+  h1 .ed,.sub .ed{border:1px dashed transparent;border-radius:4px;padding:1px 3px;outline:none}
+  body.editing h1 .ed,body.editing .sub .ed{border-color:#cfd6de;background:#fcfdfe}
+  .sub{font-size:13px;color:var(--ink3);margin-top:5px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center}
+  .tab{
+    border:1px solid var(--line);background:#fff;border-radius:999px;
+    padding:7px 15px;font-size:12.5px;font-weight:600;color:var(--ink2);cursor:pointer;
+    font-family:inherit;transition:.15s;white-space:nowrap;
+  }
+  .tab:hover{border-color:#c3cad3}
+  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tab.ghost{background:#fff;color:var(--ink2)}
+  .tab.edit.on{background:#b45309;border-color:#b45309}
+  .tab.dl{background:#fff;border-color:#c3cad3}
+  .spacer{flex:1}
+  .tabhint{font-size:12px;color:var(--ink3)}
+  .save{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;min-height:20px}
+  .save .dot{width:7px;height:7px;border-radius:50%;flex:none;background:currentColor}
+  .save .q{font-weight:500;color:var(--ink3)}
+
+  main{display:grid;grid-template-columns:minmax(0,1fr) 370px;align-items:start}
+  @media (max-width:1200px){main{grid-template-columns:1fr}}
+
+  #wrap{padding:20px;overflow:hidden}
+  #stage{position:relative;transform-origin:top left}
+  #zones,#nodes{position:absolute;inset:0}
+  #edges{position:absolute;inset:0;overflow:visible}
+  #nodes{z-index:2}
+  #edges{z-index:1}
+  #zones{z-index:0}
+
+  .zone{position:absolute;border-radius:16px;border:1px dashed #d4dae1}
+  .zone span{
+    position:absolute;top:-10px;left:16px;background:var(--bg);padding:0 8px;
+    font-size:11.5px;font-weight:700;letter-spacing:.2px;
+  }
+  /* 대분류(경영기획 / 전략기획) 겹침 박스 */
+  .gzone{position:absolute;border-radius:20px;border:1px solid}
+  .gzone span{
+    position:absolute;top:-10px;background:var(--bg);padding:0 9px;
+    font-size:11.5px;font-weight:700;letter-spacing:.2px;white-space:nowrap;
+  }
+
+  .node{
+    position:absolute;width:168px;padding:11px 13px 12px;background:var(--card);
+    border:1px solid var(--line);border-radius:12px;cursor:pointer;
+    box-shadow:0 1px 2px rgba(16,24,40,.04);transition:box-shadow .16s,opacity .16s;
+    transform:translate(-50%,-50%);
+  }
+  .node:hover{box-shadow:0 6px 18px rgba(16,24,40,.10)}
+  .node.sel{border-color:var(--ink);box-shadow:0 0 0 3px rgba(18,24,32,.08),0 6px 18px rgba(16,24,40,.10)}
+  .node.dim{opacity:.3}
+  .node.tbh{border-style:dashed;background:#fbfcfd}
+  .node.lead{width:190px;border-color:#334155;background:#f8fafc}
+  body.editing .node{cursor:grab}
+  body.editing .node:active{cursor:grabbing}
+  body.editing .node::after{
+    content:'⠿';position:absolute;top:4px;right:7px;font-size:11px;color:#c3cad3;letter-spacing:-2px;
+  }
+  .node .nm{font-size:15px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .node .rl{font-size:11px;color:var(--ink3);margin-top:3px;font-weight:600}
+  .node .dt{font-size:11px;color:var(--ink2);margin-top:7px;line-height:1.5}
+  .node .dt .sep{color:#cfd6de;font-weight:400}
+  .chip{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:.2px;white-space:nowrap}
+  .chip.m{background:#111827;color:#fff}
+  .chip.e{background:#eef1f4;color:#5b6773}
+  .chip.t{background:#fff;color:#8b96a2;border:1px dashed #c3cad3}
+  .chip.x{color:#fff}
+  /* 도메인 분할 바 — 맨 위가 주 도메인 */
+  .bar{
+    position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:3px;
+    overflow:hidden;display:flex;flex-direction:column;
+  }
+  .bar i{display:block;width:100%;flex:none}
+  .barkey{
+    display:flex;width:5px;min-height:24px;border-radius:3px;overflow:hidden;
+    flex-direction:column;align-self:stretch;flex:none;
+  }
+  .barkey i{display:block;width:100%;flex:none}
+
+  #panel{border-left:1px solid var(--line);background:var(--card);min-height:100vh;padding:22px 20px 80px}
+  #panel h2{font-size:16px;letter-spacing:-.3px;margin-bottom:2px}
+  #panel .ph{font-size:12px;color:var(--ink3);font-weight:600}
+  .sec{margin-top:20px}
+  .sec h3{
+    font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;margin-bottom:8px;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .sec p{font-size:13px;line-height:1.65;color:var(--ink2)}
+  .kv{display:flex;gap:8px;font-size:12.5px;color:var(--ink2);margin-bottom:5px}
+  .kv b{color:var(--ink);font-weight:600;min-width:68px;flex:none}
+  .ol{list-style:none}
+  .ol li{font-size:13px;color:var(--ink2);padding:5px 0 5px 24px;position:relative;line-height:1.5}
+  .ol li::before{
+    content:attr(data-n);position:absolute;left:0;top:5px;width:16px;height:16px;border-radius:5px;
+    background:#eef1f4;color:#5b6773;font-size:10px;font-weight:700;display:grid;place-items:center;
+  }
+  .ol li:first-child::before{background:#111827;color:#fff}
+  .rel{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .rel .rt{font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .rel .rt em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink3);flex:none}
+  .rel .rd{font-size:12px;color:var(--ink2);line-height:1.55;margin-top:5px}
+  .empty{font-size:12.5px;color:var(--ink3)}
+  .legend{display:flex;flex-direction:column;gap:9px}
+  .lg{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink2)}
+  .lg svg{flex:none}
+  .risk{background:#fff8f1;border:1px solid #f5ddc4;border-radius:10px;padding:11px 13px;margin-bottom:8px}
+  .risk .rt{font-size:12.5px;font-weight:700;color:#8a4e08}
+  .risk .rd{font-size:12px;color:#7a5a32;line-height:1.55;margin-top:4px}
+  footer{padding:16px 32px 40px;font-size:11.5px;color:var(--ink3);border-top:1px solid var(--line)}
+
+  /* ---- 편집 폼 ---- */
+  .f{margin-bottom:10px}
+  .f label{display:block;font-size:10.5px;font-weight:700;color:var(--ink3);letter-spacing:.3px;margin-bottom:4px}
+  .f input[type=text],.f textarea,.f select{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12.5px;
+    font-family:inherit;color:var(--ink);background:#fff;outline:none;line-height:1.5;
+  }
+  .f input:focus,.f textarea:focus,.f select:focus{border-color:#9aa5b1;box-shadow:0 0 0 3px rgba(18,24,32,.05)}
+  .f textarea{resize:vertical;min-height:58px}
+  .f .hint{font-size:10.5px;color:var(--ink3);margin-top:4px;line-height:1.5}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn{
+    border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 11px;
+    font-size:11.5px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:inherit;
+  }
+  .btn:hover{border-color:#9aa5b1}
+  .btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.dan{color:#b42318;border-color:#f3c6c1}
+  .btn.dan:hover{background:#fef3f2}
+  .btn.sm{padding:3px 8px;font-size:10.5px}
+  .card{border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:9px;background:#fcfdfe}
+  .card .ch{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+  .card .ch b{font-size:12px}
+  .swatch{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.08);flex:none}
+  .note{font-size:11.5px;color:var(--ink3);line-height:1.6;background:#f6f7f9;border-radius:8px;padding:9px 11px}
+</style>
+</head>
+<body>
+
+<script id="appdata" type="application/json">
+{
+  "title": "전략기획팀 업무 관계도 & 페어링 맵",
+  "subtitle": "팀장 외 전원 동일 직급(매니저). 화살표는 보고라인이 아니라 멘토링·서포트가 흐르는 방향입니다. 카드 왼쪽 색 띠는 그 사람의 도메인이며, 맨 위 칸이 주 도메인입니다.",
+  "footer": "신규는 채용 예정(TBH)으로 점선 표기 · 멘토급/멘티급은 직급이 아니라 서포트 방향을 나타내는 표기입니다 · 두 대분류가 겹치는 가운데 띠에 놓인 인물이 교차 인물입니다",
+  "groups": {
+    "biz": {"label":"경영기획","color":"#2563eb","side":"left"},
+    "str": {"label":"전략기획","color":"#9333ea","side":"right"}
+  },
+  "domains": {
+    "mgmt": {"label":"경영기획","color":"#1e40af","group":"biz"},
+    "ir":   {"label":"IR","color":"#2563eb","group":"biz"},
+    "gov":  {"label":"거버넌스","color":"#0891b2","group":"biz"},
+    "strat":{"label":"전략기획","color":"#6d28d9","group":"str"},
+    "cd":   {"label":"Corp-Dev","color":"#a21caf","group":"str"},
+    "ops":  {"label":"사업 & 운영 전략","color":"#db2777","group":"str"},
+    "lead": {"label":"팀 총괄","color":"#334155","group":null}
+  },
+  "order": ["flto","mu","metel","judy","marong","lilo","wonee","nw","chera","ella"],
+  "people": {
+    "flto": {
+      "n":"플투","tier":"lead","doms":["lead"],"x":570,"y":52,
+      "role":"팀장","line":"전원 직접 리포팅",
+      "info":[["포지션","팀장 (유일한 상위 직책)"]],
+      "duties":[],
+      "bgText":"팀 전체의 업무 배분과 평가 책임자. 아래 멘토링 화살표는 팀장을 거치지 않고 매니저들 사이에서 직접 흐르도록 설계한 것이 이 맵의 핵심입니다.",
+      "note":"그림에서는 선 혼잡을 줄이기 위해 팀장 → 멘토급 4인(뮤·메텔·주디·마롱)만 연결했습니다. 실제로는 9명 전원과 직접 리포팅 관계입니다."
+    },
+    "mu": {
+      "n":"뮤","tier":"mentor","doms":["ir","gov","mgmt"],"x":185,"y":245,
+      "role":"멘토급 · IR/거버넌스 앵커","line":"재무 베이스",
+      "info":[["출신 배경","재무"],["대분류","경영기획"],["주 도메인","IR"],["겸임 도메인","거버넌스 · 경영기획"],["강점","상장사 공시 · 이사회 · 주총 사이클 전반"],["팀 내 역할","거버넌스 최종 품질 게이트"]],
+      "duties":["IR","거버넌스 (공시 · 이사회 · 주총)","경영기획"],
+      "bgText":"상장사 공시·이사회·주총 사이클을 끝까지 돌려본 사람. 재무 베이스라 숫자 검증까지 함께 볼 수 있어, 거버넌스 영역의 최종 품질 게이트 역할을 합니다.",
+      "note":"이 맵에서 멘티가 세 명(릴로·원이·신규)으로 가장 많은 자리입니다. 한 번에 다 보려 하지 말고 공시 / 이사회·주총 / IR 커뮤니케이션으로 업무를 쪼개 각자에게 나눠 붙이는 것을 전제로 합니다."
+    },
+    "metel": {
+      "n":"메텔","tier":"mentor","doms":["strat","ir","mgmt"],"x":505,"y":245,
+      "role":"멘토급 · 전략/투자유치 앵커","line":"PE · 스타트업 출신",
+      "info":[["출신 배경","PE · 스타트업"],["대분류","전략기획 + 경영기획 (교차)"],["주 도메인","전략기획"],["겸임 도메인","IR (투자유치) · 경영기획"],["강점","투자자 관점에서 역산한 전략 설계"],["팀 내 역할","전략 · 투자유치 앵커"]],
+      "duties":["전략기획","경영기획","IR (투자유치)","Corp-Dev"],
+      "bgText":"PE 출신으로 투자자가 무엇을 보는지를 반대편에서 경험했고, 스타트업 경험까지 있어 전략과 자금 조달을 한 흐름으로 설계할 수 있습니다.",
+      "note":"전략 1순위와 투자유치를 동시에 들고 있어 가장 과부하가 걸리기 쉬운 자리. 체라에게 전략 실무를 넘기는 속도가 팀 전체의 병목을 좌우합니다."
+    },
+    "judy": {
+      "n":"주디","tier":"mentor","doms":["cd","strat"],"x":735,"y":245,
+      "role":"멘토급 · Corp-Dev 앵커","line":"회계법인 Deal · AICPA",
+      "info":[["출신 배경","회계법인 Deal · AICPA"],["대분류","전략기획"],["주 도메인","Corp-Dev"],["겸임 도메인","전략기획"],["강점","실사 · 밸류에이션 · 딜 구조화"],["팀 내 역할","Corp-Dev 앵커"]],
+      "duties":["Corp-Dev","전략기획"],
+      "bgText":"회계법인 Deal 본진 출신에 AICPA. 실사·밸류에이션·딜 구조에서 팀 내 가장 단단한 기술적 기반을 가진 사람입니다.",
+      "note":"도메인에서는 가르치는 쪽이지만, 쏘카 내부 맥락은 뮤·체라에게 배우는 양방향 관계가 필요합니다."
+    },
+    "marong": {
+      "n":"마롱","tier":"mentor","doms":["ops","strat"],"x":955,"y":245,
+      "role":"멘토급 · 사업개발 앵커","line":"게임사 전략 · 데이터/AI",
+      "info":[["출신 배경","게임사 전략"],["대분류","전략기획"],["주 도메인","사업 & 운영 전략 (사업개발 포함)"],["겸임 도메인","전략기획"],["강점","데이터 · AI 기반 지표 분석"],["팀 내 역할","사업개발 앵커"]],
+      "duties":["사업개발","사업 및 운영 전략","전략기획"],
+      "bgText":"게임사 전략 출신으로 지표를 직접 뜯어보는 데이터·AI 강점을 보유. 팀에서 분석 역량이 가장 뾰족합니다.",
+      "note":"데이터·AI 역량이 마롱 1인에게만 있습니다. 엘라 멘토링과 별개로, 팀 전체 대상 분석 역량 전파 역할을 함께 맡기는 것을 권합니다."
+    },
+    "lilo": {
+      "n":"릴로","tier":"mentee","doms":["ir","gov"],"x":140,"y":490,
+      "role":"멘티급 · IR 실무","line":"증권 · 운용사 출신",
+      "info":[["출신 배경","증권 · 운용사"],["대분류","경영기획"],["주 도메인","IR"],["겸임 도메인","거버넌스"],["강점","투자자 언어와 시장 반응에 익숙"],["팀 내 역할","IR 실무 담당"]],
+      "duties":["IR","거버넌스"],
+      "bgText":"증권·운용사 출신이라 투자자가 쓰는 언어에 익숙합니다. 다만 IR·거버넌스 실무 자체는 쏘카에서 익힌 영역입니다.",
+      "note":"원이와 같은 급의 IR·거버넌스 담당입니다. 두 사람 사이는 위아래가 아니라 영역 분담(릴로=IR 쪽 무게중심, 원이=거버넌스 쪽 무게중심)으로 보는 편이 맞습니다."
+    },
+    "wonee": {
+      "n":"원이","tier":"mentee","doms":["gov","ir"],"x":325,"y":490,
+      "role":"멘티급 · 거버넌스 실무","line":"기획팀 거버넌스 전담",
+      "info":[["출신 배경","기획팀 거버넌스 전담"],["대분류","경영기획"],["주 도메인","거버넌스"],["겸임 도메인","IR"],["강점","거버넌스 운영 기본기"],["팀 내 역할","거버넌스 실무 담당"]],
+      "duties":["거버넌스","IR"],
+      "bgText":"거버넌스 업무를 전담해온 경험이 있어 운영 기본기는 이미 갖춰져 있습니다. 다만 IR은 아직 초기 단계이고, 상장사 공시·이사회 수준의 거버넌스는 처음입니다.",
+      "note":"배워야 할 것이 업무 자체가 아니라 상장사 기준과 쏘카 맥락이라는 점이 중요합니다. 멘토링 내용을 기초 교육이 아니라 기준 보정 중심으로 잡아야 합니다."
+    },
+    "nw": {
+      "n":"신규","tier":"mentee","doms":["ir","strat"],"x":535,"y":490,"tbh":true,
+      "role":"멘티급 · 채용 예정 (TBH)","line":"컨설팅 또는 주요 스타트업 출신 예정",
+      "info":[["대분류","경영기획 + 전략기획 (교차)"],["주 도메인","IR"],["겸임 도메인","전략기획"],["인재상","컨설팅 또는 주요 스타트업 출신"],["핵심 요건","덱 완성도 + 성장 가능성"]],
+      "duties":["IR","전략기획"],
+      "bgText":"덱을 잘 만들고 성장 가능성이 높은 사람. 담당이 IR과 전략으로 갈라지므로, 받을 멘토를 미리 정해둔 상태에서 입사시키는 것이 좋습니다.",
+      "note":"IR은 뮤, 전략은 메텔에게 붙이되 릴로·체라와의 수평 협업 라인을 함께 열어두면 사소한 질문의 문턱이 낮아집니다."
+    },
+    "chera": {
+      "n":"체라","tier":"mentee","doms":["strat","cd"],"x":745,"y":490,
+      "role":"멘티급 · 전략 실무 · 팀 에이스","line":"모빌리티 스타트업 출신",
+      "info":[["출신 배경","모빌리티 스타트업"],["대분류","전략기획"],["주 도메인","전략기획"],["겸임 도메인","Corp-Dev"],["강점","산업 감각 · 실행 속도"],["팀 내 역할","전략 실무 담당 (팀 에이스)"]],
+      "duties":["전략기획","Corp-Dev"],
+      "bgText":"팀 에이스로 평가받는 사람. 모빌리티 스타트업 출신이라 산업 감각이 좋고 실행 속도가 빠릅니다.",
+      "note":"분류상 멘티급이지만 실제 기여도는 그보다 위에 있습니다. 받기만 하는 자리로 두면 동기가 꺾이기 쉬우므로, 신규 입사자와의 수평 협업 파트너 역할을 함께 부여하는 것을 권합니다."
+    },
+    "ella": {
+      "n":"엘라","tier":"mentee","doms":["ops","strat"],"x":955,"y":490,
+      "role":"멘티급 · 사업개발 실무","line":"전략 · 사업개발 출신",
+      "info":[["출신 배경","전략 · 사업개발"],["대분류","전략기획"],["주 도메인","사업 & 운영 전략 (사업개발 포함)"],["겸임 도메인","전략기획"],["강점","사업 실행과 운영 설계"],["팀 내 역할","사업개발 실무 담당"]],
+      "duties":["사업개발","사업 및 운영 전략","전략기획"],
+      "bgText":"전략·사업개발 경험을 이미 갖추고 있어, 실질적으로는 마롱과 대등한 실무 역량을 가진 사람입니다.",
+      "note":"분류상 멘티급이지만 가르침이 필요한 대상은 아닙니다. 마롱과의 관계는 위아래보다 역할 분담(마롱=분석·구조, 엘라=실행·운영)에 가까운 수평 페어로 운영하는 편이 맞습니다."
+    }
+  },
+  "mentor": [
+    {"a":"flto","b":"mu","dom":"lead","kind":"팀장 라인","desc":"도메인 대표 연결 (실제로는 전원 직접 리포팅)","dash":true},
+    {"a":"flto","b":"metel","dom":"lead","kind":"팀장 라인","desc":"도메인 대표 연결 (실제로는 전원 직접 리포팅)","dash":true},
+    {"a":"flto","b":"judy","dom":"lead","kind":"팀장 라인","desc":"도메인 대표 연결 (실제로는 전원 직접 리포팅)","dash":true},
+    {"a":"flto","b":"marong","dom":"lead","kind":"팀장 라인","desc":"도메인 대표 연결 (실제로는 전원 직접 리포팅)","dash":true},
+    {"a":"mu","b":"lilo","dom":"ir","kind":"메인 페어","desc":"IR 실무 전수. 투자자 응대 감각은 이미 있으니, 공시·실적발표 사이클을 한 바퀴 같이 도는 것이 1차 목표.","dash":false},
+    {"a":"mu","b":"wonee","dom":"gov","kind":"메인 페어","desc":"상장사 기준 보정. 거버넌스 운영 경험이 있으므로 기초가 아니라 이사회·주총 레벨의 기준 차이만 맞춥니다.","dash":false},
+    {"a":"mu","b":"nw","dom":"ir","kind":"메인 페어","desc":"IR 실무 OJT. 공시 자료와 IR 덱의 기준선을 잡아주는 역할.","dash":false},
+    {"a":"metel","b":"chera","dom":"strat","kind":"메인 페어","desc":"전사 전략 + 투자유치. 메텔의 과부하를 푸는 유일한 경로이기도 합니다.","dash":false},
+    {"a":"metel","b":"nw","dom":"strat","kind":"메인 페어","desc":"전략 실무 OJT. 덱 역량을 전사 전략 문맥에 얹는 작업.","dash":false},
+    {"a":"judy","b":"chera","dom":"cd","kind":"서브 페어","desc":"Corp-Dev 딜 실무 — 실사 · 밸류에이션 · 구조화. AICPA 기반의 기술적 깊이를 전달.","dash":false},
+    {"a":"marong","b":"ella","dom":"ops","kind":"수평 페어","desc":"사업개발 · 운영전략. 위계보다 역할 분담에 가까움 — 마롱=분석·구조, 엘라=실행·운영.","dash":false}
+  ],
+  "peer": [
+    {"a":"mu","b":"metel","dom":"ir","kind":"IR 양쪽 날개","desc":"뮤=공시·실적·주주소통 / 메텔=투자유치. 같은 IR이지만 보는 투자자가 달라 서로의 공백을 메웁니다. 경영기획과 전략기획을 잇는 축이기도 합니다."},
+    {"a":"metel","b":"judy","dom":"strat","kind":"전략 ↔ 딜","desc":"메텔이 방향을 그리고 주디가 숫자로 검증. Corp-Dev 안건의 표준 2인 조합."},
+    {"a":"judy","b":"marong","dom":"cd","kind":"딜 ↔ 사업","desc":"실사 단계에서 주디의 재무 검증과 마롱의 사업·데이터 검증을 붙이면 밸류에이션 근거가 두꺼워집니다."},
+    {"a":"mu","b":"judy","dom":"mgmt","kind":"재무 공통 베이스","desc":"재무(뮤)와 회계·Deal(주디)이라는 공통 언어. 주디의 사내 맥락 온보딩 창구이기도 합니다."},
+    {"a":"lilo","b":"wonee","dom":"gov","kind":"IR ↔ 거버넌스","desc":"같은 급의 영역 분담. 릴로가 IR, 원이가 거버넌스에 무게를 두고 서로의 1차 백업이 됩니다. 두 사람의 주·겸임 도메인이 정확히 뒤집혀 있습니다."},
+    {"a":"lilo","b":"nw","dom":"ir","kind":"IR 실무 분담","desc":"같은 급이라 질문 문턱이 낮은 조합. 멘토링이 아니라 실무 짝으로 운영합니다."},
+    {"a":"chera","b":"nw","dom":"strat","kind":"전략 덱 협업","desc":"덱·리서치 작업을 함께 돌리는 짝. 체라에게 협업을 주도하는 경험을 만들어줍니다."},
+    {"a":"chera","b":"ella","dom":"ops","kind":"전사 ↔ 사업","desc":"전사 전략(체라)과 현장 사업(엘라) 사이의 수평 싱크."}
+  ],
+  "backup": [
+    {"t":"공시 · 이사회 · 주총","dom":"gov","chain":["mu","wonee","lilo"],"note":"법정 기한이 있는 업무라 공백이 곧 사고. 원이를 2차로 둔 것은 거버넌스 운영 경험이 있어 인수인계가 가장 빠르기 때문입니다."},
+    {"t":"IR — 실적발표 · 주주소통","dom":"ir","chain":["mu","lilo","nw"],"note":"릴로의 증권·운용사 경험이 투자자 응대에서 바로 쓰입니다."},
+    {"t":"IR — 투자유치","dom":"ir","chain":["metel","judy","chera"],"note":"메텔 단독 의존도가 높습니다. 주디의 Deal 경험이 사실상 유일한 실질 백업입니다."},
+    {"t":"Corp-Dev (M&A · 투자)","dom":"cd","chain":["judy","metel","chera"],"note":"멘토급 2인이 서로를 백업하는 가장 안정적인 라인."},
+    {"t":"전사 전략기획","dom":"strat","chain":["metel","chera","judy"],"note":"인원이 가장 두꺼운 영역. 체라를 2차로 올려두면 메텔 부재 시에도 돌아갑니다."},
+    {"t":"경영기획","dom":"mgmt","chain":["mu","metel"],"note":"경영기획을 들고 있는 사람이 뮤와 메텔 둘뿐입니다. 두 사람 모두 다른 1순위 업무가 따로 있어 실질 여력은 더 얇습니다."},
+    {"t":"사업 & 운영 전략 (사업개발 포함)","dom":"ops","chain":["marong","ella"],"note":"마롱·엘라 2명뿐. 팀 전체에서 백업이 가장 얇은 구간입니다."},
+    {"t":"데이터 · AI 분석","dom":"ops","chain":["marong"],"note":"백업 없음. 마롱 1인 의존."}
+  ],
+  "risks": [
+    {"t":"거버넌스 지식이 뮤 1인에 집중","d":"공시·이사회·주총을 끝까지 돌려본 사람이 뮤뿐입니다. 릴로·원이·신규에게 사이클 단위로 쪼개 이관하는 일정을 미리 잡아두는 편이 안전합니다."},
+    {"t":"뮤에게 멘티 3명이 몰림","d":"멘토급 4명이 멘티급 5명을 나눠 맡는데 뮤 혼자 세 명을 봅니다. IR 쪽은 릴로, 거버넌스 쪽은 원이가 각각 신규의 실무 짝을 맡는 식으로 뮤의 직접 부하를 낮춰야 합니다."},
+    {"t":"사업개발 라인이 2인","d":"마롱·엘라만으로 사업개발과 운영전략을 모두 커버합니다. 신규 채용 포지션을 IR/전략 대신 이쪽으로 돌릴지 저울질해 볼 만합니다."},
+    {"t":"데이터 · AI 역량 단일 의존","d":"마롱 외에 분석을 받을 사람이 없습니다. 도메인 멘토링과 별개로 팀 전체 대상 분석 세션을 정기적으로 여는 역할을 맡기는 것을 권합니다."},
+    {"t":"메텔 과부하","d":"전략 1순위와 투자유치를 동시에 보유. 체라에게 전략 실무를 넘기는 속도가 팀 전체의 병목을 좌우합니다."},
+    {"t":"분류와 실제 기여도의 간극 (체라 · 엘라)","d":"두 사람은 멘티급으로 두었지만 실질 역량은 그보다 위에 있습니다. 멘티급이라는 표기가 역할을 고정시키지 않도록, 체라에게는 신규와의 협업 파트너를, 엘라에게는 마롱과의 수평 분담을 명시해 두었습니다."},
+    {"t":"멘토급/멘티급이 직급으로 읽힐 위험","d":"팀장 외 전원 동일 직급이므로 이 표기는 서포트 방향을 나타내는 운영상의 구분일 뿐입니다. 평가·보상과 연결되지 않는다는 점을 공유 시점에 명확히 해두는 것이 좋습니다."},
+    {"t":"경영기획 보유자가 뮤·메텔 2인","d":"경영기획을 들고 있는 사람이 둘뿐인데, 둘 다 1순위가 따로 있습니다(뮤=IR, 메텔=전략기획). 예산·경영계획처럼 주기가 고정된 업무가 들어오면 이 두 사람의 다른 업무와 정면으로 부딪힙니다."},
+    {"t":"교차 인물 2인에 연결이 몰림","d":"경영기획과 전략기획을 모두 걸친 사람이 메텔과 신규뿐입니다. 신규는 아직 채용 전이므로, 지금 두 대분류를 잇는 실질 통로는 메텔 한 명입니다. 뮤↔주디 라인을 의식적으로 키워두면 이 의존을 분산할 수 있습니다."}
+  ],
+  "principles": [
+    {"t":"위계는 직급이 아니라 방향이다.","d":"팀장 외 전원 동일 직급이므로 상하 박스를 쌓지 않고, 서포트가 흐르는 방향만 화살표로 표시했습니다."},
+    {"t":"도메인이 같은 사람끼리 묶는다.","d":"줄 세우기 대신 실제로 같은 업무를 들고 있는 사람끼리 페어링했습니다. 그래야 멘토링이 추상적 조언이 아니라 당장의 산출물로 이어집니다."},
+    {"t":"아래쪽은 수평으로 잇는다.","d":"멘티급 사이에는 화살표를 쓰지 않고 점선 짝으로만 연결했습니다. 같은 급끼리는 가르치는 관계가 아니라 서로의 1차 백업이자 질문 창구입니다."},
+    {"t":"도메인은 두 겹으로 읽는다.","d":"경영기획 / 전략기획이라는 대분류 두 개를 배경 박스로, 그 아래 하위 도메인 여섯 개를 카드 왼쪽 색 띠로 표시했습니다. 띠는 맨 위 칸이 주 도메인이고 아래 칸들이 겸임 도메인이라, 메인이 둘 이상인 사람도 한 장의 카드로 드러납니다."},
+    {"t":"두 대분류를 걸치는 사람은 가운데에 둔다.","d":"메텔과 신규는 경영기획과 전략기획을 동시에 들고 있어 두 배경 박스가 겹치는 띠에 배치했습니다. 이 두 자리가 막히면 두 대분류 사이의 정보 흐름이 함께 끊깁니다."}
+  ]
+}
+</script>
+
+<header>
+  <h1><span class="ed" id="t-title"></span></h1>
+  <div class="sub"><span class="ed" id="t-sub"></span></div>
+  <div class="toolbar">
+    <button class="tab on" data-view="mentor">멘토링 뷰</button>
+    <button class="tab" data-view="domain">도메인 뷰</button>
+    <button class="tab" data-view="backup">백업 라인 뷰</button>
+    <span class="spacer"></span>
+    <span class="tabhint" id="hint">카드를 클릭하면 상세가 보입니다</span>
+    <button class="tab edit" id="editBtn">✎ 편집 모드</button>
+    <button class="tab dl" id="dlBtn">↓ HTML로 내려받기</button>
+  </div>
+  <div class="toolbar" style="margin-top:10px">
+    <span class="save" id="saveState"></span>
+    <span class="spacer"></span>
+    <button class="tab ghost" id="resetBtn">↺ 원본으로 되돌리기</button>
+  </div>
+</header>
+
+<main>
+  <div id="wrap">
+    <div id="stage">
+      <div id="zones"></div>
+      <svg id="edges"><defs id="defs"></defs><g id="elayer"></g></svg>
+      <div id="nodes"></div>
+    </div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+
+<footer><span class="ed" id="t-foot"></span></footer>
+
+<script>
+/* ======================= 상태 ======================= */
+const DATA_EL = document.getElementById('appdata');
+/* 파일에 구워진 원본 — '원본으로 되돌리기'의 기준점 */
+const BASE_JSON = DATA_EL.textContent;
+
+/* ---- 브라우저 자동 저장 ----
+   이 파일을 컴퓨터에서 열어 쓰는 것을 전제로 합니다. 수정하면 즉시 브라우저에
+   저장되고, 같은 파일을 다시 열면 그대로 복원됩니다. 저장소를 쓸 수 없는
+   환경(미리보기 등)에서는 조용히 비활성화되고 상단에 그 사실을 표시합니다. */
+const STORE_KEY = 'socar-team-map/v1';
+let storeOK = true, restored = false, savedAt = null, saveTimer = null;
+
+function lsGet(){ try{ return window.localStorage.getItem(STORE_KEY); }catch(e){ storeOK=false; return null; } }
+function lsSet(v){ try{ window.localStorage.setItem(STORE_KEY,v); return true; }catch(e){ storeOK=false; return false; } }
+function lsDel(){ try{ window.localStorage.removeItem(STORE_KEY); }catch(e){ storeOK=false; } }
+
+function normalize(o){
+  if(!o || !o.people || !o.order) return null;
+  if(!o.groups) o.groups = {};
+  if(!o.domains) o.domains = {};
+  ['mentor','peer','backup','risks','principles'].forEach(k=>{ if(!Array.isArray(o[k])) o[k]=[]; });
+  o.order = o.order.filter(i=>o.people[i]);
+  Object.keys(o.people).forEach(i=>{ if(!o.order.includes(i)) o.order.push(i); });
+  return o;
+}
+
+let S = (function(){
+  const raw = lsGet();
+  if(raw){
+    try{ const o = normalize(JSON.parse(raw)); if(o){ restored = true; return o; } }
+    catch(e){ /* 저장본이 깨졌으면 원본으로 간다 */ }
+  }
+  return JSON.parse(BASE_JSON);
+})();
+if(!S.order) S.order = Object.keys(S.people);
+
+function paintSave(kind){
+  const el = document.getElementById('saveState'); if(!el) return;
+  const hhmm = savedAt ? String(savedAt.getHours()).padStart(2,'0')+':'+String(savedAt.getMinutes()).padStart(2,'0') : '';
+  const row = (color,text,extra) =>
+    `<span class="dot" style="color:${color}"></span><span style="color:${color}">${text}</span>`
+    + (extra?`<span class="q">${extra}</span>`:'');
+  if(!storeOK){
+    el.innerHTML = row('#b42318','자동 저장을 쓸 수 없는 환경입니다','수정 후 ↓ HTML로 내려받기로 보관하세요');
+  }else if(kind==='saving'){
+    el.innerHTML = row('#b45309','저장 중…','');
+  }else if(kind==='saved'){
+    el.innerHTML = row('#047857','자동 저장됨'+(hhmm?' · '+hhmm:''),'이 브라우저에서 파일을 다시 열면 그대로 복원됩니다');
+  }else if(kind==='restored'){
+    el.innerHTML = row('#047857','저장해 둔 수정 내용을 불러왔습니다','되돌리려면 오른쪽 ↺ 원본으로 되돌리기');
+  }else{
+    el.innerHTML = row('#8b96a2','수정하면 이 브라우저에 자동 저장됩니다','');
+  }
+}
+/* 모든 편집 동작 뒤에 호출 — 짧게 모아 한 번만 쓴다 */
+function touch(){
+  if(!storeOK){ paintSave(); return; }
+  paintSave('saving');
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    saveTimer = null;
+    if(lsSet(JSON.stringify(S))){ savedAt = new Date(); paintSave('saved'); }
+    else paintSave();
+  }, 300);
+}
+function resetToOriginal(){
+  const msg = '이 브라우저에 저장된 수정 내용을 모두 지우고, 파일에 구워진 원본 상태로 돌아갑니다. 계속할까요?';
+  if(typeof confirm==='function' && !confirm(msg)) return;
+  lsDel();
+  S = JSON.parse(BASE_JSON);
+  if(!S.order) S.order = Object.keys(S.people);
+  if(!S.groups) S.groups = {};
+  window.S = S;
+  sel = null; savedAt = null; restored = false;
+  renderAll(); paintSave();
+}
+
+let view='mentor', sel=null, edit=false, scale=1;
+const TIERS = {lead:'팀장', mentor:'멘토급', mentee:'멘티급'};
+const TIERCHIP = {lead:'', mentor:'<span class="chip m">멘토급</span>', mentee:'<span class="chip e">멘티급</span>'};
+
+const $  = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const dom = k => S.domains[k] || {label:k, color:'#8b96a2'};
+const nameOf = id => (S.people[id]||{}).n || id;
+const ids = () => S.order.filter(i=>S.people[i]);
+
+/* ---- 도메인 2단 구조 헬퍼 ---- */
+if(!S.groups) S.groups = {};
+const grp = gk => S.groups[gk] || {label:gk, color:'#8b96a2'};
+const gkeys = () => Object.keys(S.groups);
+const dkeys = () => Object.keys(S.domains).filter(k=>k!=='lead');
+/* 한 사람의 도메인 목록 — 맨 앞이 주 도메인 */
+function domsOf(id){
+  const p=S.people[id]||{};
+  const a=(p.doms||[]).filter(k=>S.domains[k]);
+  return a.length?a:['lead'];
+}
+const primary = id => domsOf(id)[0];
+/* 그 사람이 걸친 대분류 */
+function groupsOf(id){
+  const out=[];
+  domsOf(id).forEach(k=>{ const g=S.domains[k].group; if(g&&S.groups[g]&&!out.includes(g)) out.push(g); });
+  return out;
+}
+const isCross = id => groupsOf(id).length>1;
+/* #rrggbb → rgba(…, a) */
+function hexA(hex,a){
+  const h=String(hex||'').replace('#','');
+  if(h.length!==6) return `rgba(139,150,162,${a})`;
+  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;
+}
+/* 분할 바 — 주 도메인이 절반, 나머지가 아래를 균등 분할 */
+function barHTML(list,cls){
+  const a = list && list.length ? list : ['lead'];
+  if(a.length===1) return `<div class="${cls}"><i style="height:100%;background:${dom(a[0]).color}"></i></div>`;
+  const rest = (50/(a.length-1)).toFixed(2);
+  return `<div class="${cls}">`+a.map((k,i)=>
+    `<i style="height:${i===0?50:rest}%;background:${dom(k).color}"></i>`).join('')+`</div>`;
+}
+
+/* ======================= 그래프 렌더 ======================= */
+function nodeW(id){ return S.people[id].tier==='lead' ? 190 : 168; }
+function nodeH(id){ const el=$('n-'+id); return el?el.offsetHeight:92; }
+function crossChip(id){
+  const g=groupsOf(id);
+  return `<span class="chip x" title="${esc(g.map(k=>grp(k).label).join(' + '))}" `
+       + `style="background:linear-gradient(90deg,${grp(g[0]).color},${grp(g[g.length-1]).color})">교차</span>`;
+}
+
+function renderNodes(){
+  const box=$('nodes'); box.innerHTML='';
+  ids().forEach(id=>{
+    const p=S.people[id];
+    const el=document.createElement('div');
+    el.className='node'+(p.tbh?' tbh':'')+(p.tier==='lead'?' lead':'');
+    el.id='n-'+id;
+    el.style.left=p.x+'px'; el.style.top=p.y+'px';
+    const chip = p.tbh ? '<span class="chip t">TBH</span>' : TIERCHIP[p.tier]||'';
+    const xchip = isCross(id) ? crossChip(id) : '';
+    const dl = domsOf(id);
+    const dline = p.tier==='lead' ? '' :
+      `<div class="dt">`+dl.map((k,i)=>
+        `<span style="color:${dom(k).color};font-weight:${i?600:700}">${esc(dom(k).label)}</span>`
+       ).join('<span class="sep"> · </span>')+`</div>`;
+    el.innerHTML=`
+      ${barHTML(dl,'bar')}
+      <div class="nm">${esc(p.n)} ${chip}${xchip}</div>
+      <div class="rl">${esc(p.line)}</div>
+      ${dline}`;
+    el.addEventListener('mousedown', e=>startDrag(e,id));
+    box.appendChild(el);
+  });
+}
+function positionNodes(){
+  ids().forEach(id=>{ const el=$('n-'+id); if(el){ el.style.left=S.people[id].x+'px'; el.style.top=S.people[id].y+'px'; } });
+}
+/* 대분류 두 개를 겹치는 배경 박스로 — 겹친 띠에 놓인 사람이 교차 인물 */
+function renderZones(){
+  const box=$('zones'); box.innerHTML='';
+  gkeys().forEach((gk,gi)=>{
+    const mem=ids().filter(i=>groupsOf(i).includes(gk));
+    if(!mem.length) return;
+    let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+    mem.forEach(i=>{ const p=S.people[i], w=nodeW(i), h=nodeH(i);
+      x1=Math.min(x1,p.x-w/2); x2=Math.max(x2,p.x+w/2); y1=Math.min(y1,p.y-h/2); y2=Math.max(y2,p.y+h/2); });
+    const px=26+gi*12, py=30+gi*13;
+    const g=grp(gk);
+    const el=document.createElement('div');
+    el.className='gzone';
+    el.style.cssText=`left:${x1-px}px;top:${y1-py}px;width:${x2-x1+px*2}px;height:${y2-y1+py*2}px;`
+      + `border-color:${hexA(g.color,.38)};background:${hexA(g.color,.045)}`;
+    el.innerHTML=`<span style="color:${g.color};${g.side==='right'?'right:20px':'left:20px'}">`
+      + `${esc(g.label)} · ${mem.length}명</span>`;
+    box.appendChild(el);
+  });
+}
+function renderDefs(){
+  const d=$('defs'); d.innerHTML='';
+  Object.keys(S.domains).forEach(k=>{
+    d.insertAdjacentHTML('beforeend',
+      `<marker id="mk-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${dom(k).color}"/></marker>`);
+  });
+}
+function edgePath(a,b){
+  const A=S.people[a], B=S.people[b];
+  const Aw=nodeW(a),Ah=nodeH(a),Bw=nodeW(b),Bh=nodeH(b);
+  const dx=B.x-A.x, dy=B.y-A.y;
+  let x1=A.x,y1=A.y,x2=B.x,y2=B.y;
+  const vert = Math.abs(dy)>Math.abs(dx)*0.6;
+  if(vert){ y1=A.y+(dy>0?Ah/2:-Ah/2); y2=B.y+(dy>0?-Bh/2:Bh/2); }
+  else    { x1=A.x+(dx>0?Aw/2:-Aw/2); x2=B.x+(dx>0?-Bw/2:Bw/2); }
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  return vert ? `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`
+              : `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+}
+function addLine(a,b,d,dash,arrow){
+  if(!S.people[a]||!S.people[b]) return;
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d',edgePath(a,b));
+  p.setAttribute('fill','none');
+  p.setAttribute('stroke',dom(d).color);
+  p.setAttribute('stroke-width',dash?1.4:2);
+  p.setAttribute('stroke-opacity',dash?.45:.7);
+  if(dash) p.setAttribute('stroke-dasharray','5 5');
+  if(arrow) p.setAttribute('marker-end',`url(#mk-${d})`);
+  p.dataset.a=a; p.dataset.b=b;
+  $('elayer').appendChild(p);
+}
+function drawEdges(){
+  $('elayer').innerHTML='';
+  if(view==='mentor'){
+    S.mentor.forEach(e=>addLine(e.a,e.b,e.dom,!!e.dash,true));
+    S.peer.forEach(e=>{
+      const pa=S.people[e.a], pb=S.people[e.b];
+      if(pa&&pb&&pa.tier==='mentee'&&pb.tier==='mentee') addLine(e.a,e.b,e.dom,true,false);
+    });
+  }else if(view==='domain'){
+    S.mentor.filter(e=>e.dom==='lead').forEach(e=>addLine(e.a,e.b,e.dom,true,false));
+    S.peer.forEach(e=>addLine(e.a,e.b,e.dom,true,false));
+    S.mentor.filter(e=>e.dom!=='lead').forEach(e=>addLine(e.a,e.b,e.dom,false,true));
+  }else{
+    S.backup.forEach(g=>{ for(let i=0;i<g.chain.length-1;i++) addLine(g.chain[i],g.chain[i+1],g.dom,i>0,true); });
+  }
+  applyHighlight();
+}
+function applyHighlight(){
+  const ns=[...document.querySelectorAll('.node')];
+  if(!sel||edit){
+    ns.forEach(n=>{ n.classList.remove('dim'); n.classList.toggle('sel', n.id==='n-'+sel); });
+    [...$('elayer').children].forEach(p=>{
+      const d=p.getAttribute('stroke-dasharray');
+      p.setAttribute('stroke-opacity', d?.45:.7); p.setAttribute('stroke-width', d?1.4:2);
+    });
+    return;
+  }
+  const linked=new Set([sel]);
+  [...$('elayer').children].forEach(p=>{
+    const on=p.dataset.a===sel||p.dataset.b===sel;
+    p.setAttribute('stroke-opacity', on?.95:.12);
+    p.setAttribute('stroke-width', on?2.6:1.2);
+    if(on){ linked.add(p.dataset.a); linked.add(p.dataset.b); }
+  });
+  ns.forEach(n=>{ const id=n.id.slice(2);
+    n.classList.toggle('dim', !linked.has(id));
+    n.classList.toggle('sel', id===sel); });
+}
+function fit(){
+  let w=1180,h=660;
+  /* 대분류 배경 박스 패딩까지 들어갈 여유를 둔다 */
+  ids().forEach(i=>{ const p=S.people[i]; w=Math.max(w,p.x+nodeW(i)/2+75); h=Math.max(h,p.y+nodeH(i)/2+70); });
+  const st=$('stage'); st.style.width=w+'px'; st.style.height=h+'px';
+  const sv=$('edges'); sv.setAttribute('width',w); sv.setAttribute('height',h);
+  const avail=$('wrap').clientWidth-40;
+  scale=Math.min(1, avail/w);
+  st.style.transform=`scale(${scale})`;
+  $('wrap').style.height=(h*scale+40)+'px';
+}
+function refreshGraph(){ renderNodes(); renderDefs(); renderZones(); drawEdges(); fit(); }
+function renderAll(){ renderText(); refreshGraph(); renderPanel(); }
+function renderText(){
+  $('t-title').textContent=S.title; $('t-sub').textContent=S.subtitle; $('t-foot').textContent=S.footer;
+  document.title=S.title;
+}
+
+/* ======================= 드래그 & 선택 ======================= */
+let drag=null;
+function startDrag(e,id){
+  if(!edit){ return; }
+  e.preventDefault();
+  drag={id, ox:e.clientX, oy:e.clientY, px:S.people[id].x, py:S.people[id].y, moved:false};
+}
+window.addEventListener('mousemove', e=>{
+  if(!drag) return;
+  const dx=(e.clientX-drag.ox)/scale, dy=(e.clientY-drag.oy)/scale;
+  if(Math.abs(dx)>3||Math.abs(dy)>3) drag.moved=true;
+  const p=S.people[drag.id];
+  p.x=Math.max(100, Math.round(drag.px+dx));
+  p.y=Math.max(40,  Math.round(drag.py+dy));
+  positionNodes(); drawEdges(); renderZones();
+});
+window.addEventListener('mouseup', ()=>{
+  if(drag){ const moved=drag.moved, id=drag.id; drag=null; fit();
+    if(!moved) select(id); else { if(sel===id) renderPanel(); touch(); } }
+});
+$('nodes').addEventListener('click', e=>{
+  if(edit) return;
+  const n=e.target.closest('.node'); if(n) select(n.id.slice(2));
+});
+function select(id){ sel = (sel===id?null:id); renderPanel(); applyHighlight(); }
+
+/* ======================= 조회 헬퍼 ======================= */
+function relOf(id){
+  const out=[];
+  S.mentor.forEach(e=>{ if(e.dom==='lead') return;
+    if(e.a===id) out.push({dir:'→ 서포트 제공', who:nameOf(e.b), ...e});
+    if(e.b===id) out.push({dir:'← 서포트 받음', who:nameOf(e.a), ...e}); });
+  S.peer.forEach(e=>{
+    if(e.a===id) out.push({dir:'↔ 수평 분담', who:nameOf(e.b), ...e});
+    if(e.b===id) out.push({dir:'↔ 수평 분담', who:nameOf(e.a), ...e}); });
+  return out;
+}
+function bkOf(id){
+  const out=[];
+  S.backup.forEach(g=>{ const i=g.chain.indexOf(id);
+    if(i>=0) out.push({t:g.t, rank:['1차 담당','2차 백업','3차 백업','4차 백업'][i]||(i+1)+'차', dom:g.dom,
+                       chain:g.chain.map(nameOf).join(' → ')}); });
+  return out;
+}
+
+/* ======================= 패널 ======================= */
+function renderPanel(){
+  const p=$('panel');
+  if(edit) p.innerHTML = sel ? editPerson(sel) : editOverview();
+  else     p.innerHTML = sel ? viewPerson(sel) : viewOverview();
+}
+
+function viewPerson(id){
+  const p=S.people[id], rels=relOf(id), bks=bkOf(id);
+  const dl=domsOf(id), gs=groupsOf(id);
+  return `
+  <div class="ph">${gs.length?gs.map(gk=>`<span style="color:${grp(gk).color}">${esc(grp(gk).label)}</span>`).join('<span style="color:#cfd6de"> + </span>'):esc(dom(dl[0]).label)}</div>
+  <h2>${esc(p.n)} <span style="font-size:12px;color:var(--ink3);font-weight:600">${esc(p.role)}</span></h2>
+  ${p.tier==='lead'?'':`<div class="sec"><h3>도메인 (주 → 겸임)</h3>
+    <div style="display:flex;gap:10px;align-items:stretch">
+      ${barHTML(dl,'barkey')}
+      <div style="flex:1">${dl.map((k,i)=>`<div class="kv" style="margin-bottom:4px">
+        <b style="min-width:46px;color:${dom(k).color}">${i===0?'주':'겸임'}</b><span>${esc(dom(k).label)}</span></div>`).join('')}</div>
+    </div></div>`}
+  ${(p.info||[]).length?`<div class="sec"><h3>프로필</h3>${p.info.map(kv=>`<div class="kv"><b>${esc(kv[0])}</b><span>${esc(kv[1])}</span></div>`).join('')}</div>`:''}
+  ${(p.duties||[]).length?`<div class="sec"><h3>담당 업무 (우선순위 순)</h3><ul class="ol">${p.duties.map((d,i)=>`<li data-n="${i+1}">${esc(d)}</li>`).join('')}</ul></div>`:''}
+  ${p.bgText?`<div class="sec"><h3>이 사람의 위치</h3><p>${esc(p.bgText)}</p></div>`:''}
+  <div class="sec"><h3>페어링 (${rels.length})</h3>
+    ${rels.length?rels.map(r=>`<div class="rel" style="border-left:3px solid ${dom(r.dom).color}">
+      <div class="rt"><span>${r.dir} · ${esc(r.who)}</span><em>${esc(r.kind)}</em></div>
+      <div class="rd">${esc(r.desc)}</div></div>`).join(''):'<div class="empty">연결된 페어가 없습니다.</div>'}
+  </div>
+  <div class="sec"><h3>백업 라인에서의 역할</h3>
+    ${bks.length?bks.map(b=>`<div class="rel" style="border-left:3px solid ${dom(b.dom).color}">
+      <div class="rt"><span>${esc(b.t)}</span><em>${b.rank}</em></div>
+      <div class="rd">${esc(b.chain)}</div></div>`).join(''):'<div class="empty">지정된 백업 역할이 없습니다.</div>'}
+  </div>
+  ${p.note?`<div class="sec"><h3>메모</h3><p>${esc(p.note)}</p></div>`:''}
+  <div class="sec"><button class="btn" onclick="select('${id}')">← 전체 보기로 돌아가기</button></div>`;
+}
+
+function viewOverview(){
+  if(view==='backup') return `
+    <h2>업무 백업 라인</h2><div class="ph">1차 담당이 빠졌을 때 누가 받는가</div>
+    <div class="sec">${S.backup.map(g=>`<div class="rel" style="border-left:3px solid ${dom(g.dom).color}">
+      <div class="rt"><span>${esc(g.t)}</span><em>${g.chain.length===1?'백업 없음':g.chain.length+'단계'}</em></div>
+      <div class="rd"><b style="color:var(--ink)">${esc(g.chain.map(nameOf).join(' → '))}</b><br>${esc(g.note)}</div></div>`).join('')}</div>
+    <div class="sec"><h3>공백 리스크</h3>${S.risks.slice(0,4).map(r=>`<div class="risk"><div class="rt">${esc(r.t)}</div><div class="rd">${esc(r.d)}</div></div>`).join('')}</div>`;
+
+  if(view==='domain'){
+    const cross=ids().filter(isCross);
+    const sub=gk=>dkeys().filter(k=>S.domains[k].group===gk);
+    const block=k=>{
+      const main=ids().filter(i=>primary(i)===k).map(nameOf);
+      const also=ids().filter(i=>primary(i)!==k&&domsOf(i).includes(k)).map(nameOf);
+      return `<div class="rel" style="border-left:3px solid ${dom(k).color}">
+        <div class="rt"><span>${esc(dom(k).label)}</span><em>주 ${main.length} · 겸임 ${also.length}</em></div>
+        <div class="rd"><b style="color:var(--ink)">주 담당</b> ${esc(main.join(' · '))||'—'}
+          <br><span style="color:var(--ink3)">겸임</span> ${esc(also.join(' · '))||'—'}</div></div>`;
+    };
+    const orphan=dkeys().filter(k=>!S.domains[k].group||!S.groups[S.domains[k].group]);
+    return `
+    <h2>도메인 구성</h2><div class="ph">대분류 ${gkeys().length}개 · 하위 도메인 ${dkeys().length}개</div>
+    ${gkeys().map(gk=>`<div class="sec">
+      <h3><span style="color:${grp(gk).color};font-size:12px">${esc(grp(gk).label)}</span>
+        <em style="font-weight:700;color:var(--ink3)">${ids().filter(i=>groupsOf(i).includes(gk)).length}명</em></h3>
+      ${sub(gk).map(block).join('')||'<div class="empty">하위 도메인이 없습니다.</div>'}
+    </div>`).join('')}
+    ${orphan.length?`<div class="sec"><h3>대분류 미지정</h3>${orphan.map(block).join('')}</div>`:''}
+    <div class="sec"><h3>두 대분류를 걸친 사람 (${cross.length})</h3>
+      ${cross.length?cross.map(i=>`<div class="rel" style="border-left:3px solid ${grp(groupsOf(i)[0]).color}">
+        <div class="rt"><span>${esc(nameOf(i))}</span><em>${esc(groupsOf(i).map(gk=>grp(gk).label).join(' + '))}</em></div>
+        <div class="rd">${esc(domsOf(i).map((k,n)=>(n?'':'주 ')+dom(k).label).join(' · '))}</div></div>`).join('')
+       :'<div class="empty">두 대분류를 동시에 들고 있는 사람이 없습니다.</div>'}
+      <div class="note" style="margin-top:8px">그림에서는 두 배경 박스가 겹치는 가운데 띠에 이 사람들이 놓입니다. 대분류 사이의 정보가 실제로 건너가는 통로입니다.</div>
+    </div>
+    <div class="sec"><h3>수평 분담 · 보완 관계</h3>${S.peer.map(e=>`<div class="rel" style="border-left:3px solid ${dom(e.dom).color}">
+      <div class="rt"><span>${esc(nameOf(e.a))} ↔ ${esc(nameOf(e.b))}</span><em>${esc(e.kind)}</em></div>
+      <div class="rd">${esc(e.desc)}</div></div>`).join('')}</div>`;
+  }
+
+  return `
+    <h2>멘토링 구조 요약</h2><div class="ph">화살표 = 서포트가 흐르는 방향 (보고라인 아님)</div>
+    <div class="sec"><h3>범례</h3><div class="legend">
+      <div class="lg"><svg width="34" height="10"><line x1="1" y1="5" x2="26" y2="5" stroke="#121820" stroke-width="2.4"/><path d="M26,1 L33,5 L26,9z" fill="#121820"/></svg> 멘토링 — 서포트가 흐르는 방향</div>
+      <div class="lg"><svg width="34" height="10"><line x1="1" y1="5" x2="33" y2="5" stroke="#8b96a2" stroke-width="1.6" stroke-dasharray="4 4"/></svg> 수평 분담 — 같은 급끼리의 짝</div>
+      <div class="lg"><span style="display:inline-block;width:34px"><span class="chip m">멘토급</span></span> ${ids().filter(i=>S.people[i].tier==='mentor').length}명</div>
+      <div class="lg"><span style="display:inline-block;width:34px"><span class="chip e">멘티급</span></span> ${ids().filter(i=>S.people[i].tier==='mentee').length}명</div>
+      <div class="lg"><span style="display:inline-block;width:34px"><span class="chip t">TBH</span></span> 채용 예정</div>
+      <div class="lg"><span style="display:flex;width:34px;justify-content:center">${barHTML(['ir','gov'],'barkey')}</span>
+        카드 왼쪽 띠 — 위 칸이 주 도메인, 아래 칸이 겸임</div>
+      <div class="lg"><span style="display:inline-block;width:34px"><span class="chip x" style="background:linear-gradient(90deg,${grp(gkeys()[0]).color},${grp(gkeys()[gkeys().length-1]).color})">교차</span></span> 두 대분류를 동시에 담당</div>
+    </div></div>
+    <div class="sec"><h3>대분류</h3><div class="legend">
+      ${gkeys().map(gk=>`<div class="lg"><span class="swatch" style="background:${hexA(grp(gk).color,.14)};border-color:${hexA(grp(gk).color,.5)}"></span>
+        <b style="color:${grp(gk).color}">${esc(grp(gk).label)}</b>
+        <span style="color:var(--ink3)">${esc(dkeys().filter(k=>S.domains[k].group===gk).map(k=>dom(k).label).join(' · '))}</span></div>`).join('')}
+    </div></div>
+    <div class="sec"><h3>이 구조의 원칙</h3>${(S.principles||[]).map((x,i)=>
+      `<p style="${i?'margin-top:12px':''}"><b style="color:var(--ink)">${i+1}. ${esc(x.t)}</b><br>${esc(x.d)}</p>`).join('')}</div>
+    <div class="sec"><h3>짚어둘 리스크</h3>${S.risks.map(r=>`<div class="risk"><div class="rt">${esc(r.t)}</div><div class="rd">${esc(r.d)}</div></div>`).join('')}</div>`;
+}
+
+/* ======================= 편집 패널 ======================= */
+function sel_opts(cur,list){ return list.map(([v,l])=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(l)}</option>`).join(''); }
+function peopleOpts(cur){ return sel_opts(cur, ids().map(i=>[i,nameOf(i)])); }
+function domOpts(cur){ return sel_opts(cur, Object.keys(S.domains).map(k=>[k,dom(k).label])); }
+
+function editPerson(id){
+  const p=S.people[id];
+  return `
+  <div class="ph">편집 중</div>
+  <h2>${esc(p.n)}</h2>
+  <div class="note">카드를 끌어서 위치를 옮길 수 있습니다. 빈 곳을 클릭하면 목록으로 돌아갑니다.</div>
+  <div class="sec">
+    <div class="row2">
+      <div class="f"><label>이름</label><input type="text" value="${esc(p.n)}" oninput="setP('${id}','n',this.value)"></div>
+      <div class="f"><label>등급</label><select onchange="setP('${id}','tier',this.value)">${sel_opts(p.tier,[['mentor','멘토급'],['mentee','멘티급'],['lead','팀장']])}</select></div>
+    </div>
+    <div class="f"><label>도메인 — 이름을 &gt; 로 구분, 맨 앞이 주 도메인</label>
+      <input type="text" value="${esc(domsOf(id).map(k=>dom(k).label).join(' > '))}" oninput="setDoms('${id}',this.value)">
+      <div class="hint">쓸 수 있는 이름: ${esc(Object.keys(S.domains).map(k=>dom(k).label).join(' / '))}
+        <br>예) IR &gt; 거버넌스 &gt; 경영기획 — 카드 왼쪽 띠가 이 순서대로 나뉩니다.</div></div>
+    <div class="f"><label>카드 한 줄 설명</label><input type="text" value="${esc(p.line)}" oninput="setP('${id}','line',this.value)"></div>
+    <div class="f"><label>역할 라벨 (상세 제목 옆)</label><input type="text" value="${esc(p.role)}" oninput="setP('${id}','role',this.value)"></div>
+    <div class="f"><label>담당 업무 — 한 줄에 하나, 위가 1순위</label>
+      <textarea oninput="setLines('${id}','duties',this.value)">${esc((p.duties||[]).join('\n'))}</textarea></div>
+    <div class="f"><label>프로필 — 한 줄에 "항목: 내용"</label>
+      <textarea oninput="setInfo('${id}',this.value)">${esc((p.info||[]).map(kv=>kv[0]+': '+kv[1]).join('\n'))}</textarea>
+      <div class="hint">예) 출신 배경: 재무</div></div>
+    <div class="f"><label>이 사람의 위치</label><textarea oninput="setP('${id}','bgText',this.value)">${esc(p.bgText)}</textarea></div>
+    <div class="f"><label>메모</label><textarea oninput="setP('${id}','note',this.value)">${esc(p.note)}</textarea></div>
+    <div class="f"><label><input type="checkbox" ${p.tbh?'checked':''} onchange="setP('${id}','tbh',this.checked)" style="width:auto;margin-right:6px">채용 예정(TBH)으로 점선 표기</label></div>
+  </div>
+  <div class="sec"><h3>이 사람의 연결</h3>
+    ${relEditList(id)}
+  </div>
+  <div class="sec" style="display:flex;gap:8px">
+    <button class="btn" onclick="select('${id}')">← 목록으로</button>
+    <button class="btn dan" onclick="delPerson('${id}')">이 인물 삭제</button>
+  </div>`;
+}
+
+function relEditList(id){
+  const rows=[];
+  S.mentor.forEach((e,i)=>{ if(e.a===id||e.b===id) rows.push(relCard('mentor',i,e)); });
+  S.peer.forEach((e,i)=>{ if(e.a===id||e.b===id) rows.push(relCard('peer',i,e)); });
+  return rows.length?rows.join(''):'<div class="empty">연결이 없습니다. 목록 화면에서 추가할 수 있습니다.</div>';
+}
+function relCard(kind,i,e){
+  const arrow = kind==='mentor' ? '→' : '↔';
+  return `<div class="card">
+    <div class="ch"><b>${esc(nameOf(e.a))} ${arrow} ${esc(nameOf(e.b))}</b>
+      <button class="btn dan sm" onclick="delRel('${kind}',${i})">삭제</button></div>
+    <div class="row2">
+      <div class="f"><label>From</label><select onchange="setRel('${kind}',${i},'a',this.value)">${peopleOpts(e.a)}</select></div>
+      <div class="f"><label>To</label><select onchange="setRel('${kind}',${i},'b',this.value)">${peopleOpts(e.b)}</select></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label>선 색(도메인)</label><select onchange="setRel('${kind}',${i},'dom',this.value)">${domOpts(e.dom)}</select></div>
+      <div class="f"><label>라벨</label><input type="text" value="${esc(e.kind)}" oninput="setRel('${kind}',${i},'kind',this.value)"></div>
+    </div>
+    <div class="f"><label>설명</label><textarea oninput="setRel('${kind}',${i},'desc',this.value)">${esc(e.desc)}</textarea></div>
+    ${kind==='mentor'?`<div class="f"><label><input type="checkbox" ${e.dash?'checked':''} onchange="setRel('mentor',${i},'dash',this.checked)" style="width:auto;margin-right:6px">점선으로 (느슨한 연결)</label></div>`:''}
+  </div>`;
+}
+
+function editOverview(){
+  return `
+  <h2>편집 모드</h2>
+  <div class="ph">바꾼 내용은 바로 그림에 반영됩니다</div>
+  <div class="note">수정하는 즉시 이 브라우저에 자동 저장됩니다. 파일을 닫았다 같은 브라우저에서 다시 열면 그대로 이어집니다. 다만 저장 위치가 <b>이 브라우저</b>라서, 다른 사람에게 보내거나 다른 기기에서 열려면 상단의 <b>HTML로 내려받기</b>로 수정본이 통째로 구워진 파일을 받아 그 파일을 넘기세요. 원본 상태로 돌아가려면 상단의 <b>↺ 원본으로 되돌리기</b>를 누르면 됩니다.</div>
+
+  <div class="sec"><h3><span>인물 (${ids().length})</span><button class="btn sm" onclick="addPerson()">+ 추가</button></h3>
+    ${ids().map(i=>`<div class="card" style="padding:8px 11px;margin-bottom:6px">
+      <div class="ch" style="margin:0">
+        <b style="display:flex;align-items:center;gap:7px">${barHTML(domsOf(i),'barkey')}${esc(nameOf(i))}
+          <span style="font-weight:600;color:var(--ink3);font-size:10.5px">${TIERS[S.people[i].tier]||''}</span>
+          ${isCross(i)?crossChip(i):''}</b>
+        <button class="btn sm" onclick="select('${i}')">편집</button>
+      </div></div>`).join('')}
+  </div>
+
+  <div class="sec"><h3><span>대분류 (${gkeys().length})</span><button class="btn sm" onclick="addGroup()">+ 추가</button></h3>
+    ${gkeys().map(gk=>`<div class="card">
+      <div class="ch"><b style="display:flex;align-items:center;gap:7px"><span class="swatch" style="background:${grp(gk).color}"></span>${esc(grp(gk).label)}</b>
+        <button class="btn dan sm" onclick="delGroup('${gk}')">삭제</button></div>
+      <div class="row2">
+        <div class="f"><label>이름</label><input type="text" value="${esc(grp(gk).label)}" oninput="setGrp('${gk}','label',this.value)"></div>
+        <div class="f"><label>색</label><input type="text" value="${esc(grp(gk).color)}" oninput="setGrp('${gk}','color',this.value)"></div>
+      </div>
+      <div class="f"><label>라벨 위치</label><select onchange="setGrp('${gk}','side',this.value)">${sel_opts(grp(gk).side||'left',[['left','왼쪽'],['right','오른쪽']])}</select></div>
+      <div class="f"><label>소속 하위 도메인</label>
+        <div class="hint" style="margin-top:0">${esc(dkeys().filter(k=>S.domains[k].group===gk).map(k=>dom(k).label).join(' · '))||'없음'}</div></div>
+    </div>`).join('')}
+    <div class="note">배경 박스는 소속 인원의 위치에서 자동으로 계산됩니다. 두 박스가 겹치는 부분에 교차 인물이 놓이도록 카드를 끌어 조정하세요.</div>
+  </div>
+
+  <div class="sec"><h3><span>멘토링 선 (${S.mentor.length})</span><button class="btn sm" onclick="addRel('mentor')">+ 추가</button></h3>
+    ${S.mentor.map((e,i)=>relCard('mentor',i,e)).join('')}
+  </div>
+
+  <div class="sec"><h3><span>수평 선 (${S.peer.length})</span><button class="btn sm" onclick="addRel('peer')">+ 추가</button></h3>
+    ${S.peer.map((e,i)=>relCard('peer',i,e)).join('')}
+  </div>
+
+  <div class="sec"><h3><span>백업 라인 (${S.backup.length})</span><button class="btn sm" onclick="addBackup()">+ 추가</button></h3>
+    ${S.backup.map((g,i)=>`<div class="card">
+      <div class="ch"><b>${esc(g.t)||'(제목 없음)'}</b><button class="btn dan sm" onclick="delBackup(${i})">삭제</button></div>
+      <div class="f"><label>업무명</label><input type="text" value="${esc(g.t)}" oninput="setBk(${i},'t',this.value)"></div>
+      <div class="f"><label>담당 순서 — 이름을 &gt; 로 구분</label>
+        <input type="text" value="${esc(g.chain.map(nameOf).join(' > '))}" oninput="setChain(${i},this.value)">
+        <div class="hint">앞에서부터 1차 담당 · 2차 백업 · 3차 백업</div></div>
+      <div class="f"><label>선 색(도메인)</label><select onchange="setBk(${i},'dom',this.value)">${domOpts(g.dom)}</select></div>
+      <div class="f"><label>메모</label><textarea oninput="setBk(${i},'note',this.value)">${esc(g.note)}</textarea></div>
+    </div>`).join('')}
+  </div>
+
+  <div class="sec"><h3><span>하위 도메인 (${Object.keys(S.domains).length})</span><button class="btn sm" onclick="addDomain()">+ 추가</button></h3>
+    ${Object.keys(S.domains).map(k=>`<div class="card">
+      <div class="ch"><b style="display:flex;align-items:center;gap:7px"><span class="swatch" style="background:${dom(k).color}"></span>${esc(dom(k).label)}</b>
+        ${k==='lead'?'':`<button class="btn dan sm" onclick="delDomain('${k}')">삭제</button>`}</div>
+      <div class="row2">
+        <div class="f"><label>이름</label><input type="text" value="${esc(dom(k).label)}" oninput="setDom('${k}','label',this.value)"></div>
+        <div class="f"><label>색</label><input type="text" value="${esc(dom(k).color)}" oninput="setDom('${k}','color',this.value)"></div>
+      </div>
+      <div class="f"><label>소속 대분류</label><select onchange="setDom('${k}','group',this.value||null)">${sel_opts(S.domains[k].group||'',[['','(없음)']].concat(gkeys().map(gk=>[gk,grp(gk).label])))}</select></div>
+    </div>`).join('')}
+    <div class="note">도메인 이름을 바꾸면 인물 편집 화면의 도메인 입력값도 새 이름으로 맞춰 적어야 합니다.</div>
+  </div>
+
+  <div class="sec"><h3><span>원칙 (${(S.principles||[]).length})</span><button class="btn sm" onclick="addItem('principles')">+ 추가</button></h3>
+    ${(S.principles||[]).map((x,i)=>`<div class="card">
+      <div class="ch"><b>${i+1}</b><button class="btn dan sm" onclick="delItem('principles',${i})">삭제</button></div>
+      <div class="f"><input type="text" value="${esc(x.t)}" oninput="setItem('principles',${i},'t',this.value)"></div>
+      <div class="f"><textarea oninput="setItem('principles',${i},'d',this.value)">${esc(x.d)}</textarea></div>
+    </div>`).join('')}
+  </div>
+
+  <div class="sec"><h3><span>리스크 (${S.risks.length})</span><button class="btn sm" onclick="addItem('risks')">+ 추가</button></h3>
+    ${S.risks.map((x,i)=>`<div class="card">
+      <div class="ch"><b>${i+1}</b><button class="btn dan sm" onclick="delItem('risks',${i})">삭제</button></div>
+      <div class="f"><input type="text" value="${esc(x.t)}" oninput="setItem('risks',${i},'t',this.value)"></div>
+      <div class="f"><textarea oninput="setItem('risks',${i},'d',this.value)">${esc(x.d)}</textarea></div>
+    </div>`).join('')}
+  </div>
+
+  <div class="sec" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" onclick="autoLayout()">자동 정렬</button>
+    <button class="btn pri" onclick="exportHTML()">↓ HTML로 내려받기</button>
+  </div>`;
+}
+
+/* ======================= 편집 동작 ======================= */
+function setP(id,k,v){ S.people[id][k]=v; refreshGraph(); if(k==='n'){ const h=$('panel').querySelector('h2'); if(h) h.textContent=v; } }
+function setDoms(id,v){
+  const byLabel={}; Object.keys(S.domains).forEach(k=>{ byLabel[dom(k).label]=k; });
+  const out=[];
+  v.split('>').map(s=>s.trim()).filter(Boolean).forEach(s=>{
+    const k = byLabel[s] || (S.domains[s] ? s : null);
+    if(k && !out.includes(k)) out.push(k);
+  });
+  S.people[id].doms = out;
+  refreshGraph();
+}
+function setLines(id,k,v){ S.people[id][k]=v.split('\n').map(s=>s.trim()).filter(Boolean); refreshGraph(); }
+function setInfo(id,v){
+  S.people[id].info = v.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{
+    const i=s.indexOf(':'); return i<0?[s,'']:[s.slice(0,i).trim(), s.slice(i+1).trim()]; });
+}
+function setRel(kind,i,k,v){ S[kind][i][k]=v; drawEdges(); }
+function delRel(kind,i){ S[kind].splice(i,1); refreshGraph(); renderPanel(); }
+function addRel(kind){
+  const list=ids(); if(list.length<2) return;
+  S[kind].push({a:list[0], b:list[1], dom:primary(list[0]), kind: kind==='mentor'?'메인 페어':'수평 분담', desc:'', dash:false});
+  refreshGraph(); renderPanel();
+  setTimeout(()=>{ const el=$('panel'); if(el&&el.scrollIntoView) el.scrollIntoView({block:'end'}); },0);
+}
+function newId(){ let i=1; while(S.people['p'+i]) i++; return 'p'+i; }
+function addPerson(){
+  const id=newId();
+  const base=dkeys()[0]||'lead';
+  S.people[id]={n:'새 멤버', tier:'mentee', doms:[base], x:200, y:700, role:'멘티급', line:'출신 배경',
+                info:[], duties:[], bgText:'', note:''};
+  S.order.push(id); refreshGraph(); select(id);
+}
+function delPerson(id){
+  if(!confirm(nameOf(id)+' 을(를) 삭제할까요? 연결된 선과 백업 라인에서도 빠집니다.')) return;
+  delete S.people[id];
+  S.order=S.order.filter(x=>x!==id);
+  S.mentor=S.mentor.filter(e=>e.a!==id&&e.b!==id);
+  S.peer  =S.peer.filter(e=>e.a!==id&&e.b!==id);
+  S.backup.forEach(g=>g.chain=g.chain.filter(c=>c!==id));
+  sel=null; refreshGraph(); renderPanel();
+}
+function setBk(i,k,v){ S.backup[i][k]=v; drawEdges(); }
+function setChain(i,v){
+  const byName={}; ids().forEach(x=>byName[nameOf(x)]=x);
+  S.backup[i].chain = v.split('>').map(s=>s.trim()).filter(Boolean).map(s=>byName[s]).filter(Boolean);
+  drawEdges();
+}
+function addBackup(){ S.backup.push({t:'새 업무', dom:dkeys()[0]||'lead', chain:[], note:''}); renderPanel(); }
+function delBackup(i){ S.backup.splice(i,1); drawEdges(); renderPanel(); }
+function setDom(k,f,v){ S.domains[k][f]=v; refreshGraph(); if(f==='group') renderPanel(); }
+function addDomain(){
+  let i=1; while(S.domains['d'+i]) i++;
+  S.domains['d'+i]={label:'새 도메인', color:'#64748b', group:gkeys()[0]||null};
+  renderPanel();
+}
+function delDomain(k){
+  if(ids().some(i=>domsOf(i).includes(k))){ alert('이 도메인을 쓰는 인물이 있어 삭제할 수 없습니다.'); return; }
+  delete S.domains[k]; refreshGraph(); renderPanel();
+}
+function setGrp(gk,f,v){ S.groups[gk][f]=v; refreshGraph(); }
+function addGroup(){
+  let i=1; while(S.groups['g'+i]) i++;
+  S.groups['g'+i]={label:'새 대분류', color:'#64748b', side:'left'};
+  renderPanel();
+}
+function delGroup(gk){
+  const used=dkeys().filter(k=>S.domains[k].group===gk);
+  if(used.length){ alert('이 대분류에 속한 도메인이 있어 삭제할 수 없습니다: '+used.map(k=>dom(k).label).join(', ')); return; }
+  delete S.groups[gk]; refreshGraph(); renderPanel();
+}
+function setItem(key,i,f,v){ S[key][i][f]=v; }
+function addItem(key){ S[key]=S[key]||[]; S[key].push({t:'',d:''}); renderPanel(); }
+function delItem(key,i){ S[key].splice(i,1); renderPanel(); }
+
+/* 대분류 순서대로 늘어놓되, 교차 인물을 두 대분류의 경계에 모아 겹침 띠를 만든다 */
+function autoLayout(){
+  const lead=ids().filter(i=>S.people[i].tier==='lead');
+  const rows={mentor:245, mentee:490};
+  const cursor={mentor:105, mentee:105};
+  const placed=new Set();
+  const put=(i)=>{ const t=S.people[i].tier==='mentor'?'mentor':'mentee';
+    S.people[i].x=cursor[t]; S.people[i].y=rows[t]; cursor[t]+=200; placed.add(i); };
+  const sync=()=>{ const m=Math.max(cursor.mentor,cursor.mentee); cursor.mentor=m; cursor.mentee=m; };
+
+  /* 도메인 나열 순서: 대분류별 하위 도메인 → 대분류 없는 도메인 */
+  const order=[];
+  gkeys().forEach(gk=>dkeys().filter(k=>S.domains[k].group===gk).forEach(k=>order.push([gk,k])));
+  dkeys().filter(k=>!S.groups[S.domains[k].group]).forEach(k=>order.push([null,k]));
+
+  let prevG;
+  order.forEach(([gk,k])=>{
+    if(prevG!==undefined && gk!==prevG){
+      /* 대분류가 바뀌는 지점: 두 대분류를 걸친 사람을 먼저 놓는다 */
+      ids().filter(i=>!placed.has(i)&&S.people[i].tier!=='lead'&&isCross(i)).forEach(put);
+      sync();
+    }
+    ['mentor','mentee'].forEach(t=>{
+      ids().filter(i=>!placed.has(i)&&S.people[i].tier===t&&primary(i)===k&&!isCross(i)).forEach(put);
+    });
+    sync();
+    prevG=gk;
+  });
+  ids().filter(i=>!placed.has(i)&&S.people[i].tier!=='lead').forEach(put);
+
+  const xs=ids().filter(i=>S.people[i].tier!=='lead').map(i=>S.people[i].x);
+  const mid=xs.length?Math.round((Math.min(...xs)+Math.max(...xs))/2):600;
+  lead.forEach(i=>{ S.people[i].x=mid; S.people[i].y=52; });
+  refreshGraph();
+}
+
+/* ======================= 내려받기 ======================= */
+function exportHTML(){
+  const prevSel=sel, prevEdit=edit;
+  DATA_EL.textContent = '\n' + JSON.stringify(S,null,1).replace(/</g,'\\u003c') + '\n';
+  $('nodes').innerHTML=''; $('zones').innerHTML=''; $('elayer').innerHTML=''; $('defs').innerHTML=''; $('panel').innerHTML='';
+  $('t-title').textContent=''; $('t-sub').textContent=''; $('t-foot').textContent=''; $('saveState').innerHTML='';
+  $('editBtn').classList.remove('on');
+  document.body.classList.remove('editing');
+  $('stage').removeAttribute('style'); $('wrap').removeAttribute('style');
+  $('edges').removeAttribute('width'); $('edges').removeAttribute('height');
+
+  const html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+
+  sel=prevSel; edit=prevEdit;
+  document.body.classList.toggle('editing', edit);
+  $('editBtn').classList.toggle('on', edit);
+  renderAll();
+  paintSave(savedAt?'saved':'');
+
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  a.download='team-map.html';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ======================= 상단 컨트롤 ======================= */
+document.querySelectorAll('.tab[data-view]').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tab[data-view]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); view=b.dataset.view; sel=null; drawEdges(); renderPanel();
+  };
+});
+$('editBtn').onclick=()=>{
+  edit=!edit; sel=null;
+  document.body.classList.toggle('editing', edit);
+  $('editBtn').classList.toggle('on', edit);
+  $('hint').textContent = edit ? '카드를 끌어서 위치를 옮기세요' : '카드를 클릭하면 상세가 보입니다';
+  renderPanel(); applyHighlight();
+};
+$('dlBtn').onclick=exportHTML;
+
+['t-title','t-sub','t-foot'].forEach(k=>{
+  const el=$(k), key={'t-title':'title','t-sub':'subtitle','t-foot':'footer'}[k];
+  el.addEventListener('focus',()=>{ if(!edit) el.blur(); });
+  el.addEventListener('input',()=>{ S[key]=el.textContent; if(key==='title') document.title=el.textContent; touch(); });
+  const sync=()=>el.setAttribute('contenteditable', edit?'true':'false');
+  new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
+  sync();
+});
+
+$('resetBtn').onclick = resetToOriginal;
+
+/* 편집 동작 전부를 한 겹 감싸서, 끝날 때마다 자동 저장이 걸리게 한다.
+   (함수 선언은 전역에 올라오므로 인라인 핸들러도 이 래퍼를 통과한다) */
+['setP','setDoms','setLines','setInfo','setRel','delRel','addRel','addPerson','delPerson',
+ 'setBk','setChain','addBackup','delBackup','setDom','addDomain','delDomain',
+ 'setGrp','addGroup','delGroup','setItem','addItem','delItem','autoLayout'
+].forEach(name=>{
+  const fn = window[name];
+  if(typeof fn !== 'function') return;
+  window[name] = function(){ const r = fn.apply(this, arguments); touch(); return r; };
+});
+
+window.addEventListener('resize',fit);
+renderAll();
+paintSave(restored ? 'restored' : '');
+window.S = S;  /* 콘솔에서 데이터를 직접 들여다보고 싶을 때 */
+</script>
+</body>
+</html>
